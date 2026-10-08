@@ -13,19 +13,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Tùy chỉnh CSS giao diện hiện đại & chuyên nghiệp
+# Custom CSS cho giao diện hiện đại
 st.markdown("""
     <style>
     .main-title {
         color: #182B49;
-        font-size: 2.2rem;
         font-weight: 700;
         margin-bottom: 0px;
     }
     .sub-title {
         color: #0096B4;
-        font-size: 1.05rem;
-        margin-bottom: 25px;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
     }
     .stButton>button {
         background-color: #0096B4;
@@ -33,20 +32,18 @@ st.markdown("""
         font-weight: bold;
         border-radius: 8px;
         border: none;
-        padding: 0.6rem 1.2rem;
-        width: 100%;
+        padding: 0.5rem 1rem;
     }
     .stButton>button:hover {
         background-color: #182B49;
         color: white;
     }
-    .ai-response-box {
+    .ai-box {
         background-color: #F4F7F9;
         border-left: 5px solid #0096B4;
-        padding: 18px;
+        padding: 15px;
         border-radius: 8px;
-        margin-top: 15px;
-        line-height: 1.6;
+        margin-top: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -55,25 +52,23 @@ st.markdown("""
 # 2. THANH CÔNG CỤ BÊN (SIDEBAR)
 # ==========================================
 with st.sidebar:
-    st.image("https://img.icons8.com/illustrations/100/art.png", width=70)
+    st.image("https://img.icons8.com/illustrations/100/art.png", width=80)
     st.title("⚙️ Cấu hình hệ thống")
     
-    # Đọc API Key từ Secrets hoặc từ ô nhập tay
+    # Tự động kết nối API Key nếu lưu trong Secrets
     api_key_secret = st.secrets.get("GEMINI_API_KEY", "")
+    if api_key_secret:
+        api_key = api_key_secret
+        st.success("🔑 Đã kết nối API Key hệ thống!")
+    else:
+        api_key = st.text_input(
+            "Nhập Gemini API Key:",
+            type="password",
+            help="Lấy API Key miễn phí tại Google AI Studio (aistudio.google.com)"
+        )
     
-    api_key_input = st.text_input(
-        "Nhập Gemini API Key:",
-        value="",
-        type="password",
-        help="Lấy API Key miễn phí tại Google AI Studio (aistudio.google.com)"
-    )
-    
-    # Ưu tiên API Key nhập tay, nếu trống thì dùng Key từ Secrets
-    api_key = api_key_input if api_key_input else api_key_secret
-
     st.divider()
     
-    # Chọn Vai trò & Môn học
     role = st.radio(
         "👥 Vai trò người dùng:",
         ["Học sinh (Thực hành)", "Giáo viên (Quản lý & Rubric)"]
@@ -87,6 +82,8 @@ with st.sidebar:
                 "Mĩ thuật THCS (Tạo dáng Sản phẩm)"
             ]
         )
+    else:
+        subject = None
     
     st.divider()
     st.caption("🏫 Trường TH & THCS Phú Định\n🎨 Dự án TechArt AI-Assistant © 2026")
@@ -95,7 +92,7 @@ with st.sidebar:
 # 3. TIÊU ĐỀ TRANG CHÍNH
 # ==========================================
 st.markdown("<h1 class='main-title'>🎨 TechArt AI-Assistant</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-title'>Hệ thống Trợ lý AI Hỗ trợ Đánh giá Năng lực & Phát triển Tư duy Phác thảo THCS</p>", unsafe_allow_html=True)
+st.markdown("<p class='sub-title'>Hệ thống Trợ lý AI hỗ trợ Đánh giá Năng lực & Phát triển Tư duy Phác thảo cho Học sinh THCS</p>", unsafe_allow_html=True)
 
 # ==========================================
 # 4. GIAO DIỆN HỌC SINH (STUDENT INTERFACE)
@@ -115,27 +112,31 @@ if role == "Học sinh (Thực hành)":
         
         description = st.text_area(
             "Mô tả thêm về ý tưởng thiết kế/sản phẩm (Tùy chọn):",
-            placeholder="Ví dụ: Em thiết kế hộp đựng dụng cụ học tập bằng bìa cứng, kích thước 20x10cm, có 3 ngăn..."
+            placeholder="Ví dụ: Em thiết kế hộp đựng bút bằng bìa cứng, kích thước 20x10cm, có 3 ngăn...",
+            key="v1_desc"
         )
         
         if uploaded_v1:
             img_v1 = Image.open(uploaded_v1)
             st.image(img_v1, caption="Bản phác thảo V1 đã tải lên", use_container_width=True)
             
-            analyze_btn = st.button("🚀 Gửi cho AI TechArt Phân tích")
-    
+            analyze_btn = st.button("🚀 Gửi cho AI TechArt Phân tích", type="primary", use_container_width=True)
+        else:
+            analyze_btn = False
+
     with col2:
-        st.markdown("### 2. Phản hồi & Câu hỏi Gợi mở từ AI")
+        st.markdown("### 2. Phản hồi & Câu hỏi gợi mở từ AI")
         
-        if uploaded_v1 and 'analyze_btn' in locals() and analyze_btn:
+        if uploaded_v1 and analyze_btn:
             if not api_key:
-                st.error("⚠️ Chưa tìm thấy Gemini API Key! Vui lòng nhập API Key ở thanh bên trái (Sidebar).")
+                st.error("⚠️ Vui lòng nhập Gemini API Key ở thanh bên (Sidebar) để bắt đầu phân tích!")
             else:
-                with st.spinner("🔍 AI đang phân tích đường nét, kết cấu và tỉ lệ bản vẽ..."):
+                with st.spinner("🔍 AI đang tự động dò tìm mô hình khả dụng và phân tích bản vẽ..."):
                     try:
+                        # Cấu hình API Key
                         genai.configure(api_key=api_key)
                         
-                        # 1. Định nghĩa Prompt câu hỏi trước khi gọi mô hình
+                        # 1. Khai báo prompt
                         prompt = f"""
                         Bạn là TechArt AI - Trợ lý sư phạm cho học sinh THCS trong môn {subject}.
                         Nhiệm vụ của bạn là phân tích bản vẽ phác thảo tay (Phiên bản V1) do học sinh gửi lên.
@@ -143,25 +144,52 @@ if role == "Học sinh (Thực hành)":
                         
                         YÊU CẦU PHẢN HỒI (Trình bày bằng Tiếng Việt thân thiện, động viên, chuẩn sư phạm):
                         1. **Lời khen động viên:** Khen ngợi 1-2 điểm sáng tạo hoặc nỗ lực phác thảo nét vẽ của học sinh.
-                        2. **Phân tích kỹ thuật / Thẩm mỹ:** Nhận xét về bố cục, tỉ lệ, tính cân đối hoặc đường nét.
+                        2. **Phân tích kỹ thuật / Thẩm mỹ:** Nhận xét về bố cục, tỉ lệ, tính cân đối hoặc đường nét kỹ thuật/tạo dáng.
                         3. **CÂU HỎI GỢI MỞ PHẢN BIỆN (QUAN TRỌNG NHẤT):** Đưa ra 2-3 câu hỏi gợi ý để học sinh TỰ SUY NGẪM và TỰ ĐIỀU CHỈNH cho bản vẽ V2. (Ví dụ: Hỏi về độ vững của chân đế, kích thước ngăn chứa, sự hài hòa màu sắc,...). 
-                        *LƯU Ý: Tuyệt đối KHÔNG cho sẵn đáp án hay vẽ hộ.*
+                        
+                        *LƯU Ý QUAN TRỌNG: Tuyệt đối KHÔNG cho sẵn đáp án hay vẽ hộ.*
                         """
                         
-                        # 2. Danh sách các mô hình Gemini hỗ trợ AI Vision
-                        model_candidates = [
-                            'gemini-2.5-flash',
-                            'gemini-2.0-flash',
-                            'gemini-1.5-flash',
-                            'gemini-1.5-flash-latest',
-                            'gemini-1.5-pro'
+                        # 2. Tự động truy vấn danh sách Model thực tế từ API của tài khoản
+                        available_models = []
+                        try:
+                            for m in genai.list_models():
+                                if hasattr(m, 'supported_generation_methods') and 'generateContent' in m.supported_generation_methods:
+                                    available_models.append(m.name)
+                        except Exception:
+                            pass
+                        
+                        # Danh sách tên model phổ biến ưu tiên
+                        preferred_models = [
+                            'gemini-2.5-flash', 'models/gemini-2.5-flash',
+                            'gemini-2.0-flash', 'models/gemini-2.0-flash',
+                            'gemini-1.5-flash', 'models/gemini-1.5-flash',
+                            'gemini-1.5-pro', 'models/gemini-1.5-pro'
                         ]
                         
+                        models_to_try = []
+                        for pref in preferred_models:
+                            if pref in available_models and pref not in models_to_try:
+                                models_to_try.append(pref)
+                        
+                        for m_name in available_models:
+                            if m_name not in models_to_try:
+                                models_to_try.append(m_name)
+                                
+                        if not models_to_try:
+                            models_to_try = [
+                                'gemini-2.5-flash',
+                                'gemini-2.0-flash',
+                                'gemini-1.5-flash',
+                                'models/gemini-1.5-flash',
+                                'models/gemini-2.0-flash'
+                            ]
+                            
+                        # 3. Thử lần lượt từng model cho đến khi thành công
                         response = None
                         last_exception = None
                         
-                        # 3. Thử nghiệm lần lượt các mô hình AI còn hoạt động
-                        for m_name in model_candidates:
+                        for m_name in models_to_try:
                             try:
                                 model = genai.GenerativeModel(m_name)
                                 response = model.generate_content([prompt, img_v1])
@@ -170,20 +198,22 @@ if role == "Học sinh (Thực hành)":
                             except Exception as ex:
                                 last_exception = ex
                                 continue
-                                
-                        if response is None and last_exception:
-                            raise last_exception
                         
-                        # 4. Lưu phản hồi vào Session State
+                        if response is None or not response.text:
+                            if last_exception:
+                                raise last_exception
+                            else:
+                                raise Exception("Không thể kết nối với các mô hình AI. Vui lòng kiểm tra lại API Key.")
+                        
                         st.session_state['ai_response'] = response.text
                         st.success("✅ Đã hoàn thành phân tích!")
                         
                     except Exception as e:
-                        st.error(f"Lỗi khi kết nối với AI: {str(e)}")
+                        st.error(f"❌ Lỗi khi kết nối với AI: {str(e)}")
         
-        # Hiển thị kết quả AI phản hồi
-        if 'ai_response' in st.session_state:
-            st.markdown(f"<div class='ai-response-box'>{st.session_state['ai_response']}</div>", unsafe_allow_html=True)
+        # Hiển thị kết quả AI
+        if 'ai_response' in st.session_state and st.session_state['ai_response']:
+            st.markdown(f"<div class='ai-box'>{st.session_state['ai_response']}</div>", unsafe_allow_html=True)
             
             st.divider()
             st.markdown("### 3. Cải tiến & Nộp Bản vẽ Hoàn thiện (V2)")
@@ -207,7 +237,7 @@ else:
     
     tab1, tab2 = st.tabs(["📋 Khung Rubric Đánh giá (GDPT 2018)", "📁 Nhật ký Tiến bộ E-Portfolio"])
     
-    # TAB 1: KHUNG RUBRIC
+    # TAB 1: RUBRIC
     with tab1:
         st.markdown("#### Khung Rubric Đánh giá Sản phẩm Thiết kế THCS")
         rubric_data = {
@@ -239,7 +269,7 @@ else:
         df_rubric = pd.DataFrame(rubric_data)
         st.table(df_rubric)
         
-    # TAB 2: E-PORTFOLIO
+    # TAB 2: E-PORTFOLIO MẪU
     with tab2:
         st.markdown("#### Nhật ký Theo dõi Tiến bộ Học sinh Lớp 8A (Thực nghiệm)")
         
