@@ -130,7 +130,32 @@ if role == "Học sinh (Thực hành)":
                 with st.spinner("🔍 AI đang phân tích đường nét, kết cấu và tỉ lệ bản vẽ..."):
                     try:
                         genai.configure(api_key=api_key)
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        model = genai.configure(api_key=api_key)
+                        
+                        # Danh sách mô hình Gemini Vision mới nhất
+                        model_candidates = [
+                            'gemini-2.5-flash',
+                            'gemini-2.0-flash',
+                            'gemini-1.5-flash-latest',
+                            'gemini-1.5-flash'
+                        ]
+                        
+                        response = None
+                        last_exception = None
+                        
+                        # Tự động thử lần lượt các model cho đến khi thành công
+                        for m_name in model_candidates:
+                            try:
+                                model = genai.GenerativeModel(m_name)
+                                response = model.generate_content([prompt, img_v1])
+                                if response:
+                                    break
+                            except Exception as ex:
+                                last_exception = ex
+                                continue
+                                
+                        if response is None and last_exception:
+                            raise last_exception
                         
                         prompt = f"""
                         Bạn là TechArt AI - Trợ lý sư phạm cho học sinh THCS trong môn {subject}.
