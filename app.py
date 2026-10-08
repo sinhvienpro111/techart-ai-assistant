@@ -2,30 +2,30 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import pandas as pd
-import io
 
 # ==========================================
 # 1. CẤU HÌNH TRANG STREAMLIT
 # ==========================================
 st.set_page_config(
-    page_title="TechArt AI-Assistant",
+    page_title="TechArt AI-Assistant | THCS",
     page_icon="🎨",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS cho giao diện thân thiện, hiện đại
+# Tùy chỉnh CSS giao diện hiện đại & chuyên nghiệp
 st.markdown("""
     <style>
     .main-title {
         color: #182B49;
+        font-size: 2.2rem;
         font-weight: 700;
         margin-bottom: 0px;
     }
     .sub-title {
         color: #0096B4;
-        font-size: 1.1rem;
-        margin-bottom: 20px;
+        font-size: 1.05rem;
+        margin-bottom: 25px;
     }
     .stButton>button {
         background-color: #0096B4;
@@ -33,18 +33,20 @@ st.markdown("""
         font-weight: bold;
         border-radius: 8px;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.2rem;
+        width: 100%;
     }
     .stButton>button:hover {
         background-color: #182B49;
         color: white;
     }
-    .ai-box {
+    .ai-response-box {
         background-color: #F4F7F9;
         border-left: 5px solid #0096B4;
-        padding: 15px;
-        border-radius: 5px;
-        margin-top: 10px;
+        padding: 18px;
+        border-radius: 8px;
+        margin-top: 15px;
+        line-height: 1.6;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -53,23 +55,25 @@ st.markdown("""
 # 2. THANH CÔNG CỤ BÊN (SIDEBAR)
 # ==========================================
 with st.sidebar:
-    st.image("https://img.icons8.com/illustrations/100/art.png", width=80)
+    st.image("https://img.icons8.com/illustrations/100/art.png", width=70)
     st.title("⚙️ Cấu hình hệ thống")
     
-    # 2.1 API Key
-    api_key = st.text_input(
+    # Đọc API Key từ Secrets hoặc từ ô nhập tay
+    api_key_secret = st.secrets.get("GEMINI_API_KEY", "")
+    
+    api_key_input = st.text_input(
         "Nhập Gemini API Key:",
+        value="",
         type="password",
         help="Lấy API Key miễn phí tại Google AI Studio (aistudio.google.com)"
     )
     
-    # Nếu có st.secrets thì ưu tiên lấy từ secrets
-    if not api_key and "GEMINI_API_KEY" in st.secrets:
-        api_key = st.secrets["GEMINI_API_KEY"]
+    # Ưu tiên API Key nhập tay, nếu trống thì dùng Key từ Secrets
+    api_key = api_key_input if api_key_input else api_key_secret
 
     st.divider()
     
-    # 2.2 Chọn Vai trò & Môn học
+    # Chọn Vai trò & Môn học
     role = st.radio(
         "👥 Vai trò người dùng:",
         ["Học sinh (Thực hành)", "Giáo viên (Quản lý & Rubric)"]
@@ -85,13 +89,13 @@ with st.sidebar:
         )
     
     st.divider()
-    st.caption(" Trường TH & THCS Phú Định\nDự án TechArt AI-Assistant © 2026")
+    st.caption("🏫 Trường TH & THCS Phú Định\n🎨 Dự án TechArt AI-Assistant © 2026")
 
 # ==========================================
-# 3. TIÊU ĐỀ TRANG
+# 3. TIÊU ĐỀ TRANG CHÍNH
 # ==========================================
 st.markdown("<h1 class='main-title'>🎨 TechArt AI-Assistant</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-title'>Hệ thống Trợ lý AI hỗ trợ Đánh giá Năng lực & Phát triển Tư duy Phác thảo cho Học sinh THCS</p>", unsafe_allow_html=True)
+st.markdown("<p class='sub-title'>Hệ thống Trợ lý AI Hỗ trợ Đánh giá Năng lực & Phát triển Tư duy Phác thảo THCS</p>", unsafe_allow_html=True)
 
 # ==========================================
 # 4. GIAO DIỆN HỌC SINH (STUDENT INTERFACE)
@@ -104,19 +108,19 @@ if role == "Học sinh (Thực hành)":
     with col1:
         st.markdown("### 1. Tải lên Bản phác thảo V1")
         uploaded_v1 = st.file_uploader(
-            "Chụp và tải ảnh bản vẽ phác thảo tay của em (Định dạng PNG/JPG):",
+            "Chụp và tải ảnh bản vẽ phác thảo tay của em (PNG, JPG, JPEG):",
             type=["jpg", "jpeg", "png"],
             key="v1_uploader"
         )
         
         description = st.text_area(
             "Mô tả thêm về ý tưởng thiết kế/sản phẩm (Tùy chọn):",
-            placeholder="Ví dụ: Em thiết kế hộp đựng bút bằng bìa cứng, kích thước 20x10cm, có 3 ngăn..."
+            placeholder="Ví dụ: Em thiết kế hộp đựng dụng cụ học tập bằng bìa cứng, kích thước 20x10cm, có 3 ngăn..."
         )
         
         if uploaded_v1:
             img_v1 = Image.open(uploaded_v1)
-            st.image(img_v1, caption="Bản phác thảo V1 đã tải lên", use_column_width=True)
+            st.image(img_v1, caption="Bản phác thảo V1 đã tải lên", use_container_width=True)
             
             analyze_btn = st.button("🚀 Gửi cho AI TechArt Phân tích")
     
@@ -125,38 +129,13 @@ if role == "Học sinh (Thực hành)":
         
         if uploaded_v1 and 'analyze_btn' in locals() and analyze_btn:
             if not api_key:
-                st.error("⚠️ Vui lòng nhập Gemini API Key ở thanh bên (Sidebar) để bắt đầu phân tích!")
+                st.error("⚠️ Chưa tìm thấy Gemini API Key! Vui lòng nhập API Key ở thanh bên trái (Sidebar).")
             else:
                 with st.spinner("🔍 AI đang phân tích đường nét, kết cấu và tỉ lệ bản vẽ..."):
                     try:
                         genai.configure(api_key=api_key)
-                        model = genai.configure(api_key=api_key)
                         
-                        # Danh sách mô hình Gemini Vision mới nhất
-                        model_candidates = [
-                            'gemini-2.5-flash',
-                            'gemini-2.0-flash',
-                            'gemini-1.5-flash-latest',
-                            'gemini-1.5-flash'
-                        ]
-                        
-                        response = None
-                        last_exception = None
-                        
-                        # Tự động thử lần lượt các model cho đến khi thành công
-                        for m_name in model_candidates:
-                            try:
-                                model = genai.GenerativeModel(m_name)
-                                response = model.generate_content([prompt, img_v1])
-                                if response:
-                                    break
-                            except Exception as ex:
-                                last_exception = ex
-                                continue
-                                
-                        if response is None and last_exception:
-                            raise last_exception
-                        
+                        # 1. Định nghĩa Prompt câu hỏi trước khi gọi mô hình
                         prompt = f"""
                         Bạn là TechArt AI - Trợ lý sư phạm cho học sinh THCS trong môn {subject}.
                         Nhiệm vụ của bạn là phân tích bản vẽ phác thảo tay (Phiên bản V1) do học sinh gửi lên.
@@ -169,17 +148,42 @@ if role == "Học sinh (Thực hành)":
                         *LƯU Ý: Tuyệt đối KHÔNG cho sẵn đáp án hay vẽ hộ.*
                         """
                         
-                        response = model.generate_content([prompt, img_v1])
+                        # 2. Danh sách các mô hình Gemini hỗ trợ AI Vision
+                        model_candidates = [
+                            'gemini-2.5-flash',
+                            'gemini-2.0-flash',
+                            'gemini-1.5-flash',
+                            'gemini-1.5-flash-latest',
+                            'gemini-1.5-pro'
+                        ]
                         
-                        # Lưu kết quả vào Session State
+                        response = None
+                        last_exception = None
+                        
+                        # 3. Thử nghiệm lần lượt các mô hình AI còn hoạt động
+                        for m_name in model_candidates:
+                            try:
+                                model = genai.GenerativeModel(m_name)
+                                response = model.generate_content([prompt, img_v1])
+                                if response and response.text:
+                                    break
+                            except Exception as ex:
+                                last_exception = ex
+                                continue
+                                
+                        if response is None and last_exception:
+                            raise last_exception
+                        
+                        # 4. Lưu phản hồi vào Session State
                         st.session_state['ai_response'] = response.text
+                        st.success("✅ Đã hoàn thành phân tích!")
                         
                     except Exception as e:
                         st.error(f"Lỗi khi kết nối với AI: {str(e)}")
         
-        # Hiển thị kết quả AI
+        # Hiển thị kết quả AI phản hồi
         if 'ai_response' in st.session_state:
-            st.markdown(f"<div class='ai-box'>{st.session_state['ai_response']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='ai-response-box'>{st.session_state['ai_response']}</div>", unsafe_allow_html=True)
             
             st.divider()
             st.markdown("### 3. Cải tiến & Nộp Bản vẽ Hoàn thiện (V2)")
@@ -191,7 +195,7 @@ if role == "Học sinh (Thực hành)":
             
             if uploaded_v2:
                 img_v2 = Image.open(uploaded_v2)
-                st.image(img_v2, caption="Bản phác thảo V2 đã hoàn thiện", use_column_width=True)
+                st.image(img_v2, caption="Bản phác thảo V2 đã hoàn thiện", use_container_width=True)
                 if st.button("✅ Xác nhận Hoàn thành & Gửi Bài"):
                     st.success("🎉 Tốt lắm! Bài làm của em đã được tự động lưu vào Nhật ký E-Portfolio gửi Giáo viên.")
 
@@ -203,7 +207,7 @@ else:
     
     tab1, tab2 = st.tabs(["📋 Khung Rubric Đánh giá (GDPT 2018)", "📁 Nhật ký Tiến bộ E-Portfolio"])
     
-    # TAB 1: RUBRIC
+    # TAB 1: KHUNG RUBRIC
     with tab1:
         st.markdown("#### Khung Rubric Đánh giá Sản phẩm Thiết kế THCS")
         rubric_data = {
@@ -235,7 +239,7 @@ else:
         df_rubric = pd.DataFrame(rubric_data)
         st.table(df_rubric)
         
-    # TAB 2: E-PORTFOLIO MẪU
+    # TAB 2: E-PORTFOLIO
     with tab2:
         st.markdown("#### Nhật ký Theo dõi Tiến bộ Học sinh Lớp 8A (Thực nghiệm)")
         
@@ -252,7 +256,7 @@ else:
         st.dataframe(df_portfolio, use_container_width=True)
         
         st.download_button(
-            label="📥 Xuất dữ liệu E-Portfolio sang Excel",
+            label="📥 Xuất dữ liệu E-Portfolio sang Excel (CSV)",
             data=df_portfolio.to_csv(index=False).encode('utf-8-sig'),
             file_name="E_Portfolio_TechArt_Class8A.csv",
             mime="text/csv"
